@@ -1,0 +1,13 @@
+.idea
+.venv
+.env
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+data/
+outputs/*
+!outputs/*.csv
+!outputs/*.md
+!outputs/*.jpg
+!outputs/*.png

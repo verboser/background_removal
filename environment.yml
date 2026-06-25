@@ -1,0 +1,10 @@
+name: background-removal
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.13,<3.14
+  - pip
+  - pip:
+      - -r requirements.txt
+      - pytest>=9.1,<10
