@@ -62,7 +62,8 @@ def read_upload_image(file: UploadFile, settings: Settings) -> Image.Image:
                     ),
                 )
 
-                        image.load()
+            image = ImageOps.exif_transpose(image)
+            image.load()
             return image.convert("RGB")
     except Image.DecompressionBombError as exc:
         raise HTTPException(
