@@ -33,6 +33,11 @@ def read_upload_image(file: UploadFile, settings: Settings) -> Image.Image:
             break
 
         total_size += len(chunk)
+        if total_size > settings.max_upload_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=f"Файл больше чем {settings.max_image_size_mb} MB",
+            )
         chunks.append(chunk)
 
     data = b"".join(chunks)
@@ -48,7 +53,16 @@ def read_upload_image(file: UploadFile, settings: Settings) -> Image.Image:
             width, height = image.size
             pixel_count = width * height
 
-            #             image.load()
+            if pixel_count > settings.max_image_pixels:
+                raise HTTPException(
+                    status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                    detail=(
+                        f"Картинка имеет {pixel_count} пикселей, "
+                        f"лимит - {settings.max_image_pixels}"
+                    ),
+                )
+
+                        image.load()
             return image.convert("RGB")
     except Image.DecompressionBombError as exc:
         raise HTTPException(
