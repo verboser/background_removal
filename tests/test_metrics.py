@@ -37,3 +37,18 @@ def test_oxford_trimap_is_converted_to_foreground_and_background():
     assert scores["dice"] == 1.0
 
 
+def test_boundary_error_is_visible_separately():
+    true = Image.new("L", (9, 9), 0)
+    pred = Image.new("L", (9, 9), 0)
+    for y in range(3, 6):
+        for x in range(3, 6):
+            true.putpixel((x, y), 255)
+    for y in range(3, 6):
+        for x in range(4, 7):
+            pred.putpixel((x, y), 255)
+
+    scores = mask_scores(pred, true)
+
+    assert scores["boundary_mae"] > scores["mae"]
+    assert scores["fp_rate"] > 0
+    assert scores["fn_rate"] > 0

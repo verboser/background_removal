@@ -44,7 +44,21 @@ def mask_scores(
     false_negative = np.logical_and(~pred_bin, true_bin).sum()
 
     # Это не matting-метрика из статьи, а быстрый способ отдельно увидеть боль по краю.
+    edge = np.zeros_like(true_bin, dtype=bool)
+    edge[:-1, :] |= true_bin[:-1, :] != true_bin[1:, :]
+    edge[1:, :] |= true_bin[:-1, :] != true_bin[1:, :]
+    edge[:, :-1] |= true_bin[:, :-1] != true_bin[:, 1:]
+    edge[:, 1:] |= true_bin[:, :-1] != true_bin[:, 1:]
+    wide_edge = edge.copy()
+    wide_edge[:-1, :] |= edge[1:, :]
+    wide_edge[1:, :] |= edge[:-1, :]
+    wide_edge[:, :-1] |= edge[:, 1:]
+    wide_edge[:, 1:] |= edge[:, :-1]
+
     mae_map = np.abs(pred - true)
+    boundary_mae = (
+        float(mae_map[wide_edge].mean()) if wide_edge.any() else float(mae_map.mean())
+    )
 
     return {
         "mae": float(mae_map.mean()),
@@ -53,6 +67,7 @@ def mask_scores(
         if pred_area + true_area
         else 1.0,
         "object_ratio": float(true_area / pred_bin.size),
+        "boundary_mae": boundary_mae,
         "fp_rate": float(false_positive / background_area) if background_area else 0.0,
         "fn_rate": float(false_negative / true_area) if true_area else 0.0,
     }
@@ -176,6 +191,7 @@ if __name__ == "__main__":
                 "iou": round(scores["iou"], 5),
                 "dice": round(scores["dice"], 5),
                 "object_ratio": round(scores["object_ratio"], 5),
+                "boundary_mae": round(scores["boundary_mae"], 5),
                 "fp_rate": round(scores["fp_rate"], 5),
                 "fn_rate": round(scores["fn_rate"], 5),
             }
@@ -190,6 +206,7 @@ if __name__ == "__main__":
     mae = np.mean([row["mae"] for row in rows])
     iou = np.mean([row["iou"] for row in rows])
     dice = np.mean([row["dice"] for row in rows])
+    boundary = np.mean([row["boundary_mae"] for row in rows])
     latency = np.mean([row["latency_ms"] for row in rows])
     latency_p50 = np.percentile([row["latency_ms"] for row in rows], 50)
     latency_p90 = np.percentile([row["latency_ms"] for row in rows], 90)
@@ -221,10 +238,10 @@ if __name__ == "__main__":
         file.write(f"- порог бинаризации: {args.threshold}\n")
         file.write("- для Oxford Pets trimap класс 2 считается фоном, 1 и 3 объектом\n\n")
         file.write("## Средние значения\n\n")
-        file.write("| MAE | IoU | Dice | latency avg | latency p50 | latency p90 |\n")
-        file.write("| ---: | ---: | ---: | ---: | ---: | ---: |\n")
+        file.write("| MAE | IoU | Dice | Boundary MAE | latency avg | latency p50 | latency p90 |\n")
+        file.write("| ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n")
         file.write(
-            f"| {mae:.5f} | {iou:.5f} | {dice:.5f} | "
+            f"| {mae:.5f} | {iou:.5f} | {dice:.5f} | {boundary:.5f} | "
             f"{latency:.1f} ms | {latency_p50:.1f} ms | {latency_p90:.1f} ms |\n\n"
         )
         file.write("## Размер объекта\n\n")
@@ -249,7 +266,7 @@ if __name__ == "__main__":
                 f"{row['dice']:.5f} | {row['fp_rate']:.5f} | {row['fn_rate']:.5f} |\n"
             )
         file.write("\n## Худшие края\n\n")
-        file.write("| Файл | MAE | IoU | Dice |\n")
+        file.write("| Файл | Boundary MAE | MAE | IoU | Dice |\n")
         file.write("| --- | ---: | ---: | ---: | ---: |\n")
         for row in worst_boundary:
             file.write(
@@ -331,7 +348,7 @@ if __name__ == "__main__":
     print(
         f"{args.backend}: files={len(rows)}, skipped={len(missing_masks)}, "
         f"mae={mae:.5f}, iou={iou:.5f}, dice={dice:.5f}, "
-        f"latency_ms={latency:.1f}"
+        f"boundary_mae={boundary:.5f}, latency_ms={latency:.1f}"
     )
     print(f"csv: {args.out}")
     print(f"summary: {summary_path}")
