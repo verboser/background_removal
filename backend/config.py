@@ -14,6 +14,9 @@ class Settings(BaseSettings):
 
     model_backend: str = "rembg"
     rembg_model: str = "birefnet-general"
+    birefnet_model_id: str = "ZhengPeng7/BiRefNet"
+    birefnet_image_size: int = Field(default=512, ge=256, le=2048)
+    device: str = "cpu"
 
     max_image_size_mb: int = Field(default=10, ge=1, le=100)
     max_image_pixels: int = Field(default=12_000_000, ge=1_000_000)
