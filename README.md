@@ -56,7 +56,7 @@ DEVICE=cpu
 
 ## Метрики
 
-Если есть датасет с картинками и масками, можно прогнать MAE, IoU и Dice:
+Если есть свой датасет с картинками и масками, можно прогнать MAE, IoU и Dice. В примере ниже `data/images` и `data/masks` это условные пути, их нужно заменить на реальные папки:
 
 ```bash
 python ml/evaluate.py --images data/images --masks data/masks --backend rembg --out outputs/rembg.csv
